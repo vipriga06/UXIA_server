@@ -1,0 +1,30 @@
+{
+  "name": "uxia-server",
+  "version": "1.0.0",
+  "description": "UXIA API Server for museum companion system",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "db:migrate": "npx sequelize-cli db:migrate",
+    "db:migrate:undo": "npx sequelize-cli db:migrate:undo:all",
+    "db:seed": "npx sequelize-cli db:seed:all",
+    "db:reset": "npm run db:migrate:undo && npm run db:migrate && npm run db:seed"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "sequelize": "^6.35.2",
+    "mysql2": "^3.9.2",
+    "dotenv": "^16.3.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "axios": "^1.6.2"
+  },
+  "devDependencies": {
+    "sequelize-cli": "^6.6.2",
+    "nodemon": "^3.0.2"
+  }
+}
