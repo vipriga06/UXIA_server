@@ -1,15 +1,15 @@
 const { Sequelize } = require('sequelize');
-const { logger } = require('./logger');
 
 const sequelize = new Sequelize(
-    process.env.MYSQL_DATABASE, // uxia
-    process.env.MYSQL_USER,
-    process.env.MYSQL_PASSWORD,
+    process.env.MYSQL_DATABASE || 'uxia_db', // uxia_db
+    process.env.MYSQL_USER || 'uxia_user',
+    process.env.MYSQL_PASSWORD || 'password',
     {
-        host: process.env.MYSQL_HOST,
-        port: process.env.MYSQL_PORT,
+        host: process.env.MYSQL_HOST || 'localhost',
+        port: process.env.MYSQL_PORT || 3306, // Puerto estándar de MySQL
         dialect: 'mysql',
-        logging: msg => logger.debug(msg),
+        // SOLUCIÓN: Elimina la referencia a logger o usa console.log
+        logging: process.env.NODE_ENV === 'development' ? console.log : false,
         pool: {
             max: 5,
             min: 0,
