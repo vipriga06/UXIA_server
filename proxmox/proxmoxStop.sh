@@ -1,69 +1,54 @@
 #!/bin/bash
+# proxmoxStop-simple.sh
 
-source ./config.env
+source ./proxmox/config.env
 
-# Obtenir configuració dels paràmetres
 USER=${1:-$DEFAULT_USER}
 RSA_PATH=${2:-$DEFAULT_RSA_PATH}
-SERVER_PORT=${3:-$DEFAULT_SERVER_PORT}
-SSH_OPTS='-oHostKeyAlgorithms=+ssh-rsa -oPubkeyAcceptedAlgorithms=+ssh-rsa'
 
-echo "User: $USER"
-echo "Ruta RSA: $RSA_PATH"
-echo "Server port: $SERVER_PORT"
+echo "Deteniendo servidor Node.js para usuario: $USER"
 
-JAR_NAME="server-package.jar"
-
-cd ..
-
-# Comprovem que els arxius existeixen
-if [[ ! -f "$RSA_PATH" ]]; then
-  echo "Error: No s'ha trobat el fitxer de clau privada: $RSA_PATH"
-  cd proxmox
-  exit 1
-fi
-
-# Iniciar ssh-agent i carregar la clau RSA
 eval "$(ssh-agent -s)"
 ssh-add "$RSA_PATH"
 
-# SSH al servidor per trobar i matar el procés del JAR
-ssh -t -p 20127 $SSH_OPTS "$USER@ieticloudpro.ieti.cat" << EOF
-    PID=\$(ps aux | grep 'java -jar $JAR_NAME' | grep -v 'grep' | awk '{print \$2}')
-    if [ -n "\$PID" ]; then
-      # Envia un senyal de terminació suau
-      kill -15 \$PID
-      echo "Senyal SIGTERM enviat al procés \$PID."
-      
-      # Espera que el procés acabi correctament
-      for i in {1..10}; do
-        if ! ps -p \$PID > /dev/null; then
-          echo "Procés \$PID aturat correctament."
-          break
-        fi
-        echo "Esperant que el procés finalitzi..."
-        sleep 1
-      done
-
-      # Força la terminació si encara està actiu
-      if ps -p \$PID > /dev/null; then
-        echo "Procés \$PID encara actiu, forçant aturada..."
-        kill -9 \$PID
-      fi
-    else
-      echo "No s'ha trobat el procés $JAR_NAME."
+ssh -p 20127 -oHostKeyAlgorithms=+ssh-rsa -oPubkeyAcceptedAlgorithms=+ssh-rsa \
+    "$USER@ieticloudpro.ieti.cat" << 'EOF'
+    echo "=== DETENIENDO APLICACIÓN ==="
+    
+    # Ir al directorio de la app
+    cd ~/uxia-server 2>/dev/null || cd ~/uxia 2>/dev/null || pwd
+    
+    echo "1. Usando PID file si existe..."
+    if [ -f server.pid ]; then
+        PID=$(cat server.pid)
+        echo "   PID encontrado: $PID"
+        kill $PID 2>/dev/null && echo "✅ Proceso $PID detenido" || echo "⚠️  PID $PID no encontrado"
+        rm -f server.pid
     fi
-
-    # Comprova si el port està ocupat i espera fins que es desalliberi
-    while netstat -an | grep -q ':$SERVER_PORT.*LISTEN'; do
-      echo "Esperant que el port $SERVER_PORT es desalliberi..."
-      sleep 1
-    done
-
-    echo "Port $SERVER_PORT desalliberat."
+    
+    echo "2. Buscando procesos node de server.js..."
+    PIDS=$(ps aux | grep "node.*server.js" | grep -v grep | awk '{print $2}')
+    if [ -n "$PIDS" ]; then
+        echo "   Procesos encontrados: $PIDS"
+        kill $PIDS 2>/dev/null
+        echo "✅ Procesos Node.js detenidos"
+    else
+        echo "   No hay procesos server.js activos"
+    fi
+    
+    echo "3. Verificando procesos npm..."
+    NPMPIDS=$(ps aux | grep "npm" | grep -v grep | awk '{print $2}')
+    if [ -n "$NPMPIDS" ]; then
+        echo "   Procesos npm encontrados: $NPMPIDS"
+        kill $NPMPIDS 2>/dev/null
+    fi
+    
+    echo "4. Estado final:"
+    echo "   Procesos node: $(ps aux | grep node | grep -v grep | wc -l)"
+    echo "   Procesos npm: $(ps aux | grep npm | grep -v grep | wc -l)"
+    
+    echo ""
+    echo "✅ Servidor detenido correctamente"
 EOF
 
-# Finalitzar l'agent SSH
 ssh-agent -k
-
-cd proxmox

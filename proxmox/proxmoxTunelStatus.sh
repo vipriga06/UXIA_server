@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eu
 
-source ./config.env
+source ./proxmox/config.env
 
 USER=${1:-$DEFAULT_USER}
 

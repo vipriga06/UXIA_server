@@ -55,13 +55,13 @@ async function startServer() {
         console.log('✅ Modelos sincronizados');
 
         app.listen(PORT, () => {
-            console.log(`🚀 Servidor corriendo en: http://localhost:${PORT}`);
-            console.log(`📊 Health check: http://localhost:${PORT}/health`);
-            console.log(`👤 API Users: http://localhost:${PORT}/api/users`);
+            console.log(`Servidor corriendo en: http://localhost:${PORT}`);
+            console.log(`Health check: http://localhost:${PORT}/health`);
+            console.log(`API Users: http://localhost:${PORT}/api/users`);
         });
 
     } catch (error) {
-        console.error('❌ Error al iniciar el servidor:', error.message);
+        console.error('Error al iniciar el servidor:', error.message);
         process.exit(1);
     }
 }

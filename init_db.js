@@ -1,37 +1,37 @@
-require('dotenv').config();
-const { sequelize } = require('./src/models');
+// require('dotenv').config();
+// const { sequelize } = require('./src/models');
 
-async function initializeDatabase() {
-    try {
-        await sequelize.authenticate();
-        console.log('✅ Conexión a MySQL exitosa');
+// async function initializeDatabase() {
+//     try {
+//         await sequelize.authenticate();
+//         console.log('✅ Conexión a MySQL exitosa');
 
-        const force = process.argv.includes('--force');
-        const noSync = process.argv.includes('--no-sync');
+//         const force = process.argv.includes('--force');
+//         const noSync = process.argv.includes('--no-sync');
         
-        if (noSync) {
-            console.log('⏸️  Sincronización desactivada por parámetro');
-        } else if (force) {
-            console.log('🔄 Modo FORCE: Recreando tablas...');
-            await sequelize.sync({ force: false });
-            console.log('✅ Tablas recreadas (todos los datos eliminados)');
-        } else {
-            console.log('🔄 Sincronizando tablas (modo ALTER)...');
-            await sequelize.sync({ alter: false });
-            console.log('✅ Tablas actualizadas');
-        }
+//         if (noSync) {
+//             console.log('⏸️  Sincronización desactivada por parámetro');
+//         } else if (force) {
+//             console.log('🔄 Modo FORCE: Recreando tablas...');
+//             await sequelize.sync({ force: false });
+//             console.log('✅ Tablas recreadas (todos los datos eliminados)');
+//         } else {
+//             console.log('🔄 Sincronizando tablas (modo ALTER)...');
+//             await sequelize.sync({ alter: false });
+//             console.log('✅ Tablas actualizadas');
+//         }
 
-        app.listen(PORT, () => {
-            console.log(`🚀 Servidor corriendo en: http://localhost:${PORT}`);
-            if (!noSync) {
-                console.log(`📊 Modo: ${force ? 'FORCE (sin datos)' : 'ALTER (con datos)'}`);
-            }
-        });
+//         app.listen(PORT, () => {
+//             console.log(`🚀 Servidor corriendo en: http://localhost:${PORT}`);
+//             if (!noSync) {
+//                 console.log(`📊 Modo: ${force ? 'FORCE (sin datos)' : 'ALTER (con datos)'}`);
+//             }
+//         });
 
-    } catch (error) {
-        console.error('❌ Error al iniciar el servidor:', error.message);
-        process.exit(1);
-    }
-}
+//     } catch (error) {
+//         console.error('❌ Error al iniciar el servidor:', error.message);
+//         process.exit(1);
+//     }
+// }
 
-initializeDatabase();
+// initializeDatabase();
