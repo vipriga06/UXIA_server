@@ -49,15 +49,16 @@ app.use('*', (req, res) => {
 async function startServer() {
     try {
         await sequelize.authenticate();
-        console.log('✅ Conexión a MySQL exitosa');
-
-        await sequelize.sync({ alter: true });
-        console.log('✅ Modelos sincronizados');
+        console.log('Base de datos conectada');
+        
+        // Sincronitzar models amb la base de dades
+        await sequelize.sync({force: false});
+        console.log('Modelos sincronizados');
 
         app.listen(PORT, () => {
-            console.log(`Servidor corriendo en: http://localhost:${PORT}`);
-            console.log(`Health check: http://localhost:${PORT}/health`);
-            console.log(`API Users: http://localhost:${PORT}/api/users`);
+            console.log(`🚀 Servidor corriendo en: http://localhost:${PORT}`);
+            console.log(`📊 Health check: http://localhost:${PORT}/health`);
+            console.log(`📚 API Docs: http://localhost:${PORT}/api-docs`);
         });
 
     } catch (error) {
@@ -66,6 +67,5 @@ async function startServer() {
     }
 }
 
-startServer();
-
 module.exports = app;
+startServer();
