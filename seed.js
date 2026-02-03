@@ -1,3 +1,4 @@
+//Codigo para crear usuario ADMIN inicial en DB(uxia_db)
 require('dotenv').config();
 const bcrypt = require('bcrypt');
 const { User } = require('./src/models');
