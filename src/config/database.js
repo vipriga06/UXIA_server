@@ -1,4 +1,5 @@
 const { Sequelize } = require('sequelize');
+const { logger } = require('./logger');
 
 const sequelize = new Sequelize(
     process.env.MYSQL_DATABASE,

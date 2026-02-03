@@ -4,6 +4,7 @@ const { sequelize } = require('./src/models');
 const userRoutes = require('./src/routes/userRoutes');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./src/config/swagger');
+const { logger, expressLogger } = require('./src/config/logger')
 
 const app = express();
 const PORT = process.env.PORT || 3000;
