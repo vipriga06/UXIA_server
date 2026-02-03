@@ -13,11 +13,11 @@ async function initializeDatabase() {
             console.log('⏸️  Sincronización desactivada por parámetro');
         } else if (force) {
             console.log('🔄 Modo FORCE: Recreando tablas...');
-            await sequelize.sync({ force: true });
+            await sequelize.sync({ force: false });
             console.log('✅ Tablas recreadas (todos los datos eliminados)');
         } else {
             console.log('🔄 Sincronizando tablas (modo ALTER)...');
-            await sequelize.sync({ alter: true });
+            await sequelize.sync({ alter: false });
             console.log('✅ Tablas actualizadas');
         }
 
