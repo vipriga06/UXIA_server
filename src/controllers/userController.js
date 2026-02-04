@@ -56,54 +56,66 @@ const userController = {
 
     async loginUser(req, res) {
         try {
-            const { nickname, email, telefon } = req.body;
+            const { email, password } = req.body;
 
-            //Validación básica
-            if (!nickname || !email || !telefon) {
+            // Validación básica
+            if (!email || !password) {
                 return res.status(400).json({
                     status: "ERROR",
-                    message: "Falten camps obligatoris"
+                    message: "Email/usuario y contraseña son obligatorios"
                 });
             }
 
-            //Comprobar email duplicado
-            const existingUser = await User.findOne({ where: { email } });
-            if (existingUser) {
-                return res.status(409).json({
-                    status: "ERROR",
-                    message: "Email ja registrat"
-                });
-            }
-
-            //Password interno automático
-            const passwordHash = crypto.randomBytes(16).toString('hex');
-
-            //Crear usuario
-            const user = await User.create({
-                nickname,
-                email,
-                telefon,
-                passwordHash,
-                role: 'user'
+            // Buscar usuario por email O por nickname
+            const { Op } = require('sequelize');
+            const user = await User.findOne({
+                where: {
+                    [Op.or]: [
+                        { email: email },
+                        { nickname: email } // Permite usar nickname como login
+                    ]
+                }
             });
 
-            //Generar token
-            const apiKey = generateToken();
+            if (!user) {
+                return res.status(401).json({
+                    status: "ERROR",
+                    message: "Usuario no encontrado"
+                });
+            }
 
-            //Guardar token en tabla Token
+            // Verificar contraseña comparando con hash bcrypt
+            const bcrypt = require('bcrypt');
+            const passwordMatch = await bcrypt.compare(password, user.passwordHash);
+            
+            if (!passwordMatch) {
+                return res.status(401).json({
+                    status: "ERROR",
+                    message: "Contraseña incorrecta"
+                });
+            }
+
+            // Generar token
+            const token = generateToken();
+
+            // Guardar token en tabla Token
             await Token.create({
-                token: apiKey,
+                token: token,
                 userId: user.id
             });
 
-            //Respuesta final
-            return res.status(201).json({
+            // Respuesta final
+            return res.status(200).json({
                 status: "OK",
-                message: "L'usuari s'ha creat correctament",
+                message: "Usuari autenticat correctament",
                 data: {
-                    nickname: user.nickname,
-                    email: user.email,
-                    api_key: apiKey
+                    token: token,
+                    user: {
+                        id: user.id,
+                        nickname: user.nickname,
+                        email: user.email,
+                        role: user.role
+                    }
                 }
             });
 
