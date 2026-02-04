@@ -39,8 +39,8 @@ app.get('/health/db', async (req, res) => {
 });
 
 // RUTAS DE API
-//User
-app.use('/api/users', userRoutes);
+//Users
+app.use('/api/usuaris', userRoutes);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
