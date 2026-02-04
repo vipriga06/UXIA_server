@@ -1,10 +1,12 @@
 require('dotenv').config();
 const express = require('express');
 const { sequelize } = require('./src/models');
-const userRoutes = require('./src/routes/userRoutes');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./src/config/swagger');
 const { logger, expressLogger } = require('./src/config/logger')
+
+const userRoutes = require('./src/routes/userRoutes');
+const adminRoutes = require('./src/routes/adminRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,10 +38,14 @@ app.get('/health/db', async (req, res) => {
     }
 });
 
-// Rutas de API
+// RUTAS DE API
+//User
 app.use('/api/users', userRoutes);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+//Admin
+app.use('/api/admin', adminRoutes);
 
 // Ruta 404
 app.use('*', (req, res) => {
@@ -52,7 +58,7 @@ async function startServer() {
         await sequelize.authenticate();
         console.log('Base de datos conectada');
         
-        // Sincronitzar models amb la base de dades
+        // Sincronizar models con la DB
         await sequelize.sync({force: false});
         console.log('Modelos sincronizados');
 
