@@ -39,7 +39,7 @@ const userController = {
             const user = await User.create({
                 nickname,
                 email,
-                passwordHash: password, // En producción usarías bcrypt
+                passwordHash: password, 
                 role: role || 'user'
             });
             
@@ -58,7 +58,7 @@ const userController = {
         try {
             const { nickname, email, telefon } = req.body;
 
-            // 1. Validación básica
+            //Validación básica
             if (!nickname || !email || !telefon) {
                 return res.status(400).json({
                     status: "ERROR",
@@ -66,7 +66,7 @@ const userController = {
                 });
             }
 
-            // 2. Comprobar email duplicado
+            //Comprobar email duplicado
             const existingUser = await User.findOne({ where: { email } });
             if (existingUser) {
                 return res.status(409).json({
@@ -75,10 +75,10 @@ const userController = {
                 });
             }
 
-            // 3. Password interno automático
+            //Password interno automático
             const passwordHash = crypto.randomBytes(16).toString('hex');
 
-            // 4. Crear usuario
+            //Crear usuario
             const user = await User.create({
                 nickname,
                 email,
@@ -87,16 +87,16 @@ const userController = {
                 role: 'user'
             });
 
-            // 5. Generar token
+            //Generar token
             const apiKey = generateToken();
 
-            // 6. Guardar token en tabla Token
+            //Guardar token en tabla Token
             await Token.create({
                 token: apiKey,
                 userId: user.id
             });
 
-            // 7. Respuesta final
+            //Respuesta final
             return res.status(201).json({
                 status: "OK",
                 message: "L'usuari s'ha creat correctament",
