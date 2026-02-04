@@ -1,7 +1,7 @@
 const { User } = require('../models');
 
 const { Token } = require('../models');
-const generateToken = require('../utils/generateToken');
+const generateToken = require('../../utils/generateToken');
 const crypto = require('crypto');
 
 const userController = {
