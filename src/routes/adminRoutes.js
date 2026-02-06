@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
+const authTokenMiddleware = require('../middleware/authMiddleware');
 
 /**
  * @swagger
@@ -35,5 +36,18 @@ const adminController = require('../controllers/adminController');
  *         description: Accés restringit
  */
 router.post('/usuaris/login', adminController.loginAdmin);
+
+
+router.post('/usuaris/logout', authTokenMiddleware, adminController.logout);
+
+router.get('/usuaris/testtoken', authTokenMiddleware, adminController.testToken);
+
+router.get('/usuaris', authTokenMiddleware, adminController.listUsers);
+
+router.post('/usuaris', authTokenMiddleware, adminController.createUser);
+
+router.delete('/usuaris/:id', authTokenMiddleware, adminController.deleteUser);
+
+router.patch('/usuaris/:id/rol', authTokenMiddleware, adminController.updateUserRole);
 
 module.exports = router;
