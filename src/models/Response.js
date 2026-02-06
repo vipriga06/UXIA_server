@@ -9,6 +9,14 @@ module.exports = (sequelize) => {
             primaryKey: true,
             autoIncrement: true
         },
+        petitionId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: {
+                model: 'petitions',
+                key: 'id'
+            }
+        },
         status: {
             type: DataTypes.STRING,
             allowNull: false

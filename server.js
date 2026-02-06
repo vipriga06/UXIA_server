@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const { sequelize } = require('./src/models');
 const userRoutes = require('./src/routes/userRoutes');
+const petitionRoutes = require('./src/routes/petitionRoutes');
+const responseRoutes = require('./src/routes/responseRoutes');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./src/config/swagger');
 const { logger, expressLogger } = require('./src/config/logger')
@@ -38,6 +40,8 @@ app.get('/health/db', async (req, res) => {
 
 // Rutas de API
 app.use('/api/users', userRoutes);
+app.use('/api/petitions', petitionRoutes);
+app.use('/api/responses', responseRoutes);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 

@@ -9,6 +9,14 @@ module.exports = (sequelize) => {
             primaryKey: true,
             autoIncrement: true
         },
+        userId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: {
+                model: 'users',
+                key: 'id'
+            }
+        },
         prompt: {
             type: DataTypes.TEXT,
             allowNull: false

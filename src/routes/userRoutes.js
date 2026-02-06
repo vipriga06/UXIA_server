@@ -2,15 +2,6 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
 
-// GET /api/users - Obtener todos los usuarios
-router.get('/', userController.getAllUsers);
-
-// GET /api/users/:id - Obtener usuario por ID
-router.get('/:id', userController.getUserById);
-
-// POST /api/users - Crear nuevo usuario
-router.post('/', userController.createUser);
-
 /**
  * @swagger
  * /api/users/login:
@@ -63,5 +54,60 @@ router.post('/', userController.createUser);
  */
 router.post('/login', userController.loginUser);
 
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Obtener todos los usuarios
+ *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: Lista de usuarios
+ *   post:
+ *     summary: Crear nuevo usuario
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nickname:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Usuario creado
+ *       400:
+ *         description: Error de validación
+ */
+router.get('/', userController.getAllUsers);
+router.post('/', userController.createUser);
+
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: Obtener usuario por ID
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Usuario encontrado
+ *       404:
+ *         description: Usuario no encontrado
+ */
+router.get('/:id', userController.getUserById);
 
 module.exports = router;
