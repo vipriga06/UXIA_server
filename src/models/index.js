@@ -4,6 +4,7 @@ const User = require('./User')(sequelize);
 const Token = require('./Token')(sequelize);
 const Petition = require('./Petition')(sequelize);
 const Response = require('./Response')(sequelize);
+const Image = require('./Image')(sequelize);
 
 // Relaciones
 User.hasMany(Petition, { foreignKey: 'userId' });
@@ -15,10 +16,14 @@ Token.belongsTo(User, { foreignKey: 'userId' });
 Petition.hasOne(Response, { foreignKey: 'petitionId', onDelete: 'CASCADE' });
 Response.belongsTo(Petition, { foreignKey: 'petitionId' });
 
+Petition.hasMany(Image, { foreignKey: 'petitionId', onDelete: 'CASCADE' });
+Image.belongsTo(Petition, { foreignKey: 'petitionId' });
+
 module.exports = {
     sequelize,
     User,
     Token,
     Petition,
-    Response
+    Response,
+    Image
 };

@@ -7,6 +7,7 @@ const { logger, expressLogger } = require('./src/config/logger')
 
 const userRoutes = require('./src/routes/userRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
+const imageRoutes = require('./src/routes/imageRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,14 +39,12 @@ app.get('/health/db', async (req, res) => {
     }
 });
 
-// RUTAS DE API
-//Users
+// RUTES DE API
 app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/analitzar-imatge', imageRoutes); 
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
-//Admin
-app.use('/api/admin', adminRoutes);
 
 // Ruta 404
 app.use('*', (req, res) => {

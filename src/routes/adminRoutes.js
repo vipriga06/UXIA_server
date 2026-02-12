@@ -37,7 +37,20 @@ const authTokenMiddleware = require('../middleware/authMiddleware');
  */
 router.post('/usuaris/login', adminController.loginAdmin);
 
-
+/**
+ * @swagger
+ * /api/admin/usuaris/logout:
+ *   post:
+ *     summary: Tancar sessió d'administrador
+ *     tags: [Admin]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout correcte
+ *       401:
+ *         description: Token invàlid
+ */
 router.post('/usuaris/logout', authTokenMiddleware, adminController.logout);
 
 router.get('/usuaris/testtoken', authTokenMiddleware, adminController.testToken);

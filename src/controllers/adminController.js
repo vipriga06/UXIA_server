@@ -42,7 +42,7 @@ const adminController = {
             }
 
             // Generar token
-            const token = generateToken();
+            const token = generateToken(user.id);
 
             // Guardar o actualizar token
             const existingToken = await Token.findOne({ where: { userId: user.id } });

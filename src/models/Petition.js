@@ -5,13 +5,16 @@ module.exports = (sequelize) => {
 
     Petition.init({
         id: {
-            type: DataTypes.INTEGER,
-            primaryKey: true,
-            autoIncrement: true
+            type: DataTypes.UUID,
+            defaultValue: DataTypes.UUIDV4,
+            primaryKey: true
         },
         prompt: {
             type: DataTypes.TEXT,
-            allowNull: false
+            allowNull: false,
+            validate: {
+                notEmpty: true
+            }
         },
         images: {
             type: DataTypes.TEXT,
@@ -19,7 +22,10 @@ module.exports = (sequelize) => {
         },
         model: {
             type: DataTypes.STRING,
-            allowNull: false
+            allowNull: false,
+            validate: {
+                notEmpty: true
+            }
         }
     }, {
         sequelize,

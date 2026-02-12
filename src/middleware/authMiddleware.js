@@ -1,9 +1,7 @@
+// src/middleware/authMiddleware.js
+const jwt = require('jsonwebtoken');
 const { Token } = require('../models');
 
-/**
- * Middleware para validar token de autorización
- * Espera el token en el header: Authorization: Bearer <token>
- */
 const authTokenMiddleware = async (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
@@ -15,20 +13,36 @@ const authTokenMiddleware = async (req, res, next) => {
             });
         }
 
-        const token = authHeader.substring(7);
+        const tokenValue = authHeader.substring(7);
 
-        // Buscar token en BD
-        const tokenRecord = await Token.findOne({ where: { token } });
+        // 1. Verificar JWT
+        let decoded;
+        try {
+            decoded = jwt.verify(tokenValue, process.env.JWT_SECRET || 'clau_secreta_temporal');
+        } catch (error) {
+            return res.status(401).json({
+                status: "ERROR",
+                message: "Token invàlid o expirat"
+            });
+        }
+
+        // 2. Verificar que existeix a BD
+        const tokenRecord = await Token.findOne({ 
+            where: { 
+                token: tokenValue,
+                userId: decoded.userId 
+            } 
+        });
 
         if (!tokenRecord) {
             return res.status(401).json({
                 status: "ERROR",
-                message: "Token invàlid"
+                message: "Token no vàlid"
             });
         }
 
-        // Guardar userId en req para usar en controllers
-        req.userId = tokenRecord.userId;
+        req.userId = decoded.userId;
+        req.token = tokenValue;
         next();
 
     } catch (error) {
