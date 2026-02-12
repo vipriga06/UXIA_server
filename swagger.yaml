@@ -1,0 +1,290 @@
+openapi: 3.0.0
+info:
+  title: UXIA SERVER
+  version: 1.0.0
+  description: >
+    API per a l’anàlisi d’imatges amb models Ollama i gestió d’usuaris
+    (registre, validació, perfil i administració)
+
+servers:
+  - url: http://127.0.0.1:3000
+    description: Development server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API_KEY
+
+  schemas:
+    CommonResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [OK, ERROR]
+          example: OK
+        message:
+          type: string
+          example: Operació realitzada correctament
+        data:
+          nullable: true
+          example: {}
+
+    ImageAnalysisRequest:
+      type: object
+      required:
+        - prompt
+        - images
+        - stream
+      properties:
+        prompt:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          example: Què hi ha en aquesta imatge?
+        images:
+          type: array
+          description: Tot i ser una llista, només s'admet una imatge
+          items:
+            type: string
+            format: base64
+        stream:
+          type: boolean
+          default: false
+        model:
+          type: string
+          default: qwen2.5vl:7b
+
+    ImageAnalysisResponseData:
+      type: object
+      properties:
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        processing_time:
+          type: string
+        model_used:
+          type: string
+
+    UserRegisterRequest:
+      type: object
+      required:
+        - nickname
+        - email
+        - telefon
+      properties:
+        nickname:
+          type: string
+          example: SparkleFuzzMcGee
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        telefon:
+          type: string
+          example: "+34 600 000 000"
+
+    UserValidateRequest:
+      type: object
+      required:
+        - telefon
+        - codi_validacio
+      properties:
+        telefon:
+          type: string
+          example: "+34 600 000 000"
+        codi_validacio:
+          type: integer
+          example: 817921
+
+    UserProfile:
+      type: object
+      properties:
+        nickname:
+          type: string
+        email:
+          type: string
+        telefon:
+          type: string
+        validat:
+          type: boolean
+        tos:
+          type: boolean
+
+    AdminLoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: admin@example.com
+        password:
+          type: string
+          example: Not123456
+
+tags:
+  - name: Images
+    description: Anàlisi d’imatges
+  - name: Users
+    description: Gestió d’usuaris
+  - name: Admin
+    description: Operacions d’administració
+
+paths:
+  /api/analitzar-imatge:
+    post:
+      summary: Analitzar i descriure el contingut d’una imatge
+      tags: [Images]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImageAnalysisRequest'
+      responses:
+        '200':
+          description: Resultat de l’anàlisi de la imatge
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CommonResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ImageAnalysisResponseData'
+              example:
+                status: OK
+                message: Imatges processades correctament
+                data:
+                  description: La imatge mostra...
+                  tags: [pixel, videojoc, retro, mario]
+                  processing_time: 2.3s
+                  model_used: qwen2.5vl:7b
+
+  /api/usuaris/registrar:
+    post:
+      summary: Registrar un nou usuari
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegisterRequest'
+      responses:
+        '200':
+          description: Usuari creat correctament
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommonResponse'
+              example:
+                status: OK
+                message: L'usuari s'ha creat correctament
+                data:
+                  nickname: SparkleFuzzMcGee
+                  email: user@example.com
+                  api_key: ABCD1234EFGH5678IJKL
+
+  /api/usuaris/validar:
+    post:
+      summary: Validar usuari mitjançant codi SMS
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserValidateRequest'
+      responses:
+        '200':
+          description: Usuari validat correctament
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommonResponse'
+              example:
+                status: OK
+                message: Usuari validat correctament
+                data:
+                  api_key: ABCD1234EFGH5678IJKL
+
+  /api/usuaris/perfil:
+    get:
+      summary: Obtenir el perfil de l’usuari associat a l’API key
+      tags: [Users]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Perfil d’usuari
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommonResponse'
+              example:
+                status: OK
+                message: Informació de l'usuari obtinguda correctament
+                data:
+                  nickname: SparkleFuzzMcGee
+                  email: user@example.com
+                  telefon: "+34 600 000 000"
+                  validat: true
+                  tos: true
+
+  /api/admin/usuaris/login:
+    post:
+      summary: Login d’usuari administrador
+      tags: [Admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminLoginRequest'
+      responses:
+        '200':
+          description: Administrador autenticat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommonResponse'
+              example:
+                status: OK
+                message: Usuari autenticat correctament
+                data:
+                  token: D23qswfSgR6VM9cuTuN
+
+  /api/admin/usuaris:
+    get:
+      summary: Obtenir la llista completa d’usuaris (Admin)
+      tags: [Admin]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Llista d’usuaris
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommonResponse'
+              example:
+                status: OK
+                message: Consulta realitzada correctament
+                data:
+                  - nickname: SparkleFuzzMcGee
+                    email: user1@example.com
+                    telefon: "+34 600 000 001"
+                    validat: true
+                    tos: true
