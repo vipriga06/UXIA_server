@@ -58,14 +58,13 @@ async function startServer() {
         console.log('Base de datos conectada');
         
         // Sincronizar models con la DB
-        await sequelize.sync({force: false});
+        await sequelize.sync({force: true});
         console.log('Modelos sincronizados');
 
-        app.listen(PORT, () => {
-            console.log(`🚀 Servidor corriendo en: http://localhost:${PORT}`);
-            console.log(`📊 Health check: http://localhost:${PORT}/health`);
-            console.log(`📚 API Docs: http://localhost:${PORT}/api-docs`);
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
         });
+
 
     } catch (error) {
         console.error('Error al iniciar el servidor:', error.message);

@@ -105,7 +105,7 @@ npm install --omit=dev
 sudo_cmd npm install -g pm2
 
 # Start app with global pm2
-pm2 start server/app.js --name app --update-env
+pm2 start server.js --name app --update-env
 pm2 save
 
 echo "✔️  Deploy correcte. Estat PM2:"
