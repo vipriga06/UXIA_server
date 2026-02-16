@@ -1,21 +1,34 @@
-const { User } = require('../models');
-
-const { Token } = require('../models');
+// src/controllers/userController.js
+const { User, Token } = require('../models');
 const generateToken = require('../utils/generateToken');
-const crypto = require('crypto');
+const bcrypt = require('bcrypt');
+const { Op } = require('sequelize');
+
+const saltRounds = 10;
 
 const userController = {
+    // GET /api/users - Obtener todos los usuarios
     async getAllUsers(req, res) {
         try {
             const users = await User.findAll({
                 attributes: ['id', 'nickname', 'email', 'role', 'createdAt']
             });
-            res.json(users);
+            
+            return res.status(200).json({
+                status: 'OK',
+                message: 'Llistat d\'usuaris obtingut correctament',
+                data: users
+            });
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            return res.status(500).json({
+                status: 'ERROR',
+                message: error.message,
+                data: null
+            });
         }
     },
     
+    // GET /api/users/:id - Obtener usuario por ID
     async getUserById(req, res) {
         try {
             const user = await User.findByPk(req.params.id, {
@@ -23,37 +36,92 @@ const userController = {
             });
             
             if (!user) {
-                return res.status(404).json({ error: 'Usuario no encontrado' });
+                return res.status(404).json({
+                    status: 'ERROR',
+                    message: 'Usuari no trobat',
+                    data: null
+                });
             }
             
-            res.json(user);
+            return res.status(200).json({
+                status: 'OK',
+                message: 'Usuari trobat',
+                data: user
+            });
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            return res.status(500).json({
+                status: 'ERROR',
+                message: error.message,
+                data: null
+            });
         }
     },
     
+    // POST /api/users - Crear nuevo usuario
     async createUser(req, res) {
         try {
             const { nickname, email, password, role } = req.body;
+
+            // Validaciones básicas
+            if (!nickname || !email || !password) {
+                return res.status(400).json({
+                    status: 'ERROR',
+                    message: 'Falten camps obligatoris: nickname, email, password',
+                    data: null
+                });
+            }
+
+            // Verificar si el usuario ya existe
+            const existingUser = await User.findOne({
+                where: {
+                    [Op.or]: [
+                        { email },
+                        { nickname }
+                    ]
+                }
+            });
+
+            if (existingUser) {
+                return res.status(409).json({
+                    status: 'ERROR',
+                    message: 'L\'email o nickname ja està registrat',
+                    data: null
+                });
+            }
+
+            // 🔐 Generar hash de la contrasenya
+            const hashedPassword = await bcrypt.hash(password, saltRounds);
             
             const user = await User.create({
                 nickname,
                 email,
-                passwordHash: password, 
-                role: role || 'user'
+                passwordHash: hashedPassword,
+                role: role || 'user',
+                telefon: req.body.telefon || '',
+                validat: false,
+                tos: false
             });
             
-            res.status(201).json({
-                id: user.id,
-                nickname: user.nickname,
-                email: user.email,
-                role: user.role
+            return res.status(201).json({
+                status: 'OK',
+                message: 'Usuari creat correctament',
+                data: {
+                    id: user.id,
+                    nickname: user.nickname,
+                    email: user.email,
+                    role: user.role
+                }
             });
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            return res.status(500).json({
+                status: 'ERROR',
+                message: error.message,
+                data: null
+            });
         }
     },
 
+    // POST /api/users/login - Login d'usuari normal
     async loginUser(req, res) {
         try {
             const { email, password } = req.body;
@@ -62,17 +130,17 @@ const userController = {
             if (!email || !password) {
                 return res.status(400).json({
                     status: "ERROR",
-                    message: "Email/usuario y contraseña son obligatorios"
+                    message: "Email i contrasenya són obligatoris",
+                    data: null
                 });
             }
 
             // Buscar usuario por email O por nickname
-            const { Op } = require('sequelize');
             const user = await User.findOne({
                 where: {
                     [Op.or]: [
                         { email: email },
-                        { nickname: email } // Permite usar nickname como login
+                        { nickname: email }
                     ]
                 }
             });
@@ -80,25 +148,26 @@ const userController = {
             if (!user) {
                 return res.status(401).json({
                     status: "ERROR",
-                    message: "Usuario no encontrado"
+                    message: "Usuari no trobat",
+                    data: null
                 });
             }
 
-            // Verificar contraseña comparando con hash bcrypt
-            const bcrypt = require('bcrypt');
+            // 🔐 Verificar contrasenya amb bcrypt
             const passwordMatch = await bcrypt.compare(password, user.passwordHash);
             
             if (!passwordMatch) {
                 return res.status(401).json({
                     status: "ERROR",
-                    message: "Contraseña incorrecta"
+                    message: "Contrasenya incorrecta",
+                    data: null
                 });
             }
 
-            // Generar token
-            const token = generateToken();
+            // Generar token (JWT amb userId)
+            const token = generateToken(user.id);
 
-            // Guardar token en tabla Token
+            // Guardar token a BD
             await Token.create({
                 token: token,
                 userId: user.id
@@ -122,7 +191,8 @@ const userController = {
         } catch (error) {
             return res.status(500).json({
                 status: "ERROR",
-                message: error.message
+                message: error.message,
+                data: null
             });
         }
     }

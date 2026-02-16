@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const imageController = require('../controllers/imageController');
+const authTokenMiddleware = require('../middleware/authMiddleware');
 
 /**
  * @swagger
@@ -29,5 +30,7 @@ const imageController = require('../controllers/imageController');
  *                       $ref: '#/components/schemas/ImageAnalysisResponseData'
  */
 router.post('/', imageController.analitzarImatge);
+
+router.post('/', authTokenMiddleware, imageController.analitzarImatge);
 
 module.exports = router;

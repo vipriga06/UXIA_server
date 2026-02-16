@@ -1,7 +1,13 @@
+// src/controllers/adminController.js
 const { User, Token } = require('../models');
 const generateToken = require('../utils/generateToken');
+const bcrypt = require('bcrypt');
+const { Op } = require('sequelize');
+
+const saltRounds = 10;
 
 const adminController = {
+    // POST /api/admin/usuaris/login
     async loginAdmin(req, res) {
         try {
             const { email, password } = req.body;
@@ -10,7 +16,8 @@ const adminController = {
             if (!email || !password) {
                 return res.status(400).json({
                     status: "ERROR",
-                    message: "Falten camps obligatoris"
+                    message: "Falten camps obligatoris",
+                    data: null
                 });
             }
 
@@ -20,7 +27,8 @@ const adminController = {
             if (!user) {
                 return res.status(401).json({
                     status: "ERROR",
-                    message: "Credencials incorrectes"
+                    message: "Credencials incorrectes",
+                    data: null
                 });
             }
 
@@ -28,20 +36,23 @@ const adminController = {
             if (user.role !== 'admin') {
                 return res.status(403).json({
                     status: "ERROR",
-                    message: "Accés restringit a administradors"
+                    message: "Accés restringit a administradors",
+                    data: null
                 });
             }
 
-            // Verificar contraseña
-            // ⚠️ Aquí deberías usar bcrypt.compare si más adelante lo implementas
-            if (user.passwordHash !== password) {
+            // 🔐 Verificar contraseña con bcrypt
+            const passwordMatch = await bcrypt.compare(password, user.passwordHash);
+            
+            if (!passwordMatch) {
                 return res.status(401).json({
                     status: "ERROR",
-                    message: "Credencials incorrectes"
+                    message: "Credencials incorrectes",
+                    data: null
                 });
             }
 
-            // Generar token
+            // Generar token (JWT amb userId)
             const token = generateToken(user.id);
 
             // Guardar o actualizar token
@@ -68,22 +79,24 @@ const adminController = {
         } catch (error) {
             return res.status(500).json({
                 status: "ERROR",
-                message: error.message
+                message: error.message,
+                data: null
             });
         }
     },
 
+    // POST /api/admin/usuaris/logout
     async logout(req, res) {
         try {
-            const userId = req.userId; // Viene del middleware de autenticación
+            const userId = req.userId;
 
-            // Buscar y eliminar el token
             const existingToken = await Token.findOne({ where: { userId } });
 
             if (!existingToken) {
                 return res.status(401).json({
                     status: "ERROR",
-                    message: "Token invàlid o no existeix"
+                    message: "Token invàlid o no existeix",
+                    data: null
                 });
             }
 
@@ -91,28 +104,31 @@ const adminController = {
 
             return res.status(200).json({
                 status: "OK",
-                message: "Logout correcte. Token eliminat."
+                message: "Logout correcte. Token eliminat.",
+                data: null
             });
 
         } catch (error) {
             return res.status(500).json({
                 status: "ERROR",
-                message: "Error en logout: " + error.message
+                message: "Error en logout: " + error.message,
+                data: null
             });
         }
     },
 
+    // GET /api/admin/usuaris/testtoken
     async testToken(req, res) {
         try {
-            const userId = req.userId; // Viene del middleware de autenticación
+            const userId = req.userId;
 
-            // El token ya ha sido validado por el middleware
             const user = await User.findByPk(userId);
 
             if (!user) {
                 return res.status(404).json({
                     status: "ERROR",
-                    message: "Usuari no trobat"
+                    message: "Usuari no trobat",
+                    data: null
                 });
             }
 
@@ -135,20 +151,22 @@ const adminController = {
         } catch (error) {
             return res.status(500).json({
                 status: "ERROR",
-                message: "Error validant token: " + error.message
+                message: "Error validant token: " + error.message,
+                data: null
             });
         }
     },
 
+    // GET /api/admin/usuaris - Llistar usuaris
     async listUsers(req, res) {
         try {
-            // req.userId viene del middleware, verificamos que sea admin
             const admin = await User.findByPk(req.userId);
 
             if (admin.role !== 'admin') {
                 return res.status(403).json({
                     status: "ERROR",
-                    message: "Accés restringit"
+                    message: "Accés restringit",
+                    data: null
                 });
             }
 
@@ -166,11 +184,13 @@ const adminController = {
         } catch (error) {
             return res.status(500).json({
                 status: "ERROR",
-                message: "Error listant usuaris: " + error.message
+                message: "Error listant usuaris: " + error.message,
+                data: null
             });
         }
     },
 
+    // POST /api/admin/usuaris - Crear usuari (admin)
     async createUser(req, res) {
         try {
             const admin = await User.findByPk(req.userId);
@@ -178,7 +198,8 @@ const adminController = {
             if (admin.role !== 'admin') {
                 return res.status(403).json({
                     status: "ERROR",
-                    message: "Accés restringit"
+                    message: "Accés restringit",
+                    data: null
                 });
             }
 
@@ -188,14 +209,15 @@ const adminController = {
             if (!email || !nickname || !password || !telefon) {
                 return res.status(400).json({
                     status: "ERROR",
-                    message: "Falten camps obligatoris (email, nickname, password, telefon)"
+                    message: "Falten camps obligatoris (email, nickname, password, telefon)",
+                    data: null
                 });
             }
 
             // Verificar que no exista
             const existingUser = await User.findOne({
                 where: {
-                    [require('sequelize').Op.or]: [
+                    [Op.or]: [
                         { email },
                         { nickname }
                     ]
@@ -205,15 +227,19 @@ const adminController = {
             if (existingUser) {
                 return res.status(400).json({
                     status: "ERROR",
-                    message: "L'email o nickname ja existeix"
+                    message: "L'email o nickname ja existeix",
+                    data: null
                 });
             }
+
+            // 🔐 Generar hash de la contrasenya
+            const hashedPassword = await bcrypt.hash(password, saltRounds);
 
             // Crear usuario
             const newUser = await User.create({
                 email,
                 nickname,
-                passwordHash: password, // ⚠️ Usar bcrypt en producción
+                passwordHash: hashedPassword,
                 role,
                 telefon,
                 validat,
@@ -239,11 +265,13 @@ const adminController = {
         } catch (error) {
             return res.status(500).json({
                 status: "ERROR",
-                message: "Error creant usuari: " + error.message
+                message: "Error creant usuari: " + error.message,
+                data: null
             });
         }
     },
 
+    // DELETE /api/admin/usuaris/:id
     async deleteUser(req, res) {
         try {
             const admin = await User.findByPk(req.userId);
@@ -251,7 +279,8 @@ const adminController = {
             if (admin.role !== 'admin') {
                 return res.status(403).json({
                     status: "ERROR",
-                    message: "Accés restringit"
+                    message: "Accés restringit",
+                    data: null
                 });
             }
 
@@ -261,7 +290,8 @@ const adminController = {
             if (parseInt(id) === admin.id) {
                 return res.status(400).json({
                     status: "ERROR",
-                    message: "No pots eliminar el teu compte d'administrador"
+                    message: "No pots eliminar el teu compte d'administrador",
+                    data: null
                 });
             }
 
@@ -270,7 +300,8 @@ const adminController = {
             if (!user) {
                 return res.status(404).json({
                     status: "ERROR",
-                    message: "Usuari no trobat"
+                    message: "Usuari no trobat",
+                    data: null
                 });
             }
 
@@ -282,17 +313,20 @@ const adminController = {
 
             return res.status(200).json({
                 status: "OK",
-                message: "Usuari eliminat correctament"
+                message: "Usuari eliminat correctament",
+                data: null
             });
 
         } catch (error) {
             return res.status(500).json({
                 status: "ERROR",
-                message: "Error eliminant usuari: " + error.message
+                message: "Error eliminant usuari: " + error.message,
+                data: null
             });
         }
     },
 
+    // PATCH /api/admin/usuaris/:id/rol
     async updateUserRole(req, res) {
         try {
             const admin = await User.findByPk(req.userId);
@@ -300,7 +334,8 @@ const adminController = {
             if (admin.role !== 'admin') {
                 return res.status(403).json({
                     status: "ERROR",
-                    message: "Accés restringit"
+                    message: "Accés restringit",
+                    data: null
                 });
             }
 
@@ -311,7 +346,8 @@ const adminController = {
             if (parseInt(id) === admin.id) {
                 return res.status(400).json({
                     status: "ERROR",
-                    message: "No pots canviar el rol del teu compte d'administrador"
+                    message: "No pots canviar el rol del teu compte d'administrador",
+                    data: null
                 });
             }
 
@@ -319,7 +355,8 @@ const adminController = {
             if (!role || !['admin', 'user'].includes(role)) {
                 return res.status(400).json({
                     status: "ERROR",
-                    message: "Rol invàlid. Debes ser 'admin' o 'user'"
+                    message: "Rol invàlid. Ha de ser 'admin' o 'user'",
+                    data: null
                 });
             }
 
@@ -328,7 +365,8 @@ const adminController = {
             if (!user) {
                 return res.status(404).json({
                     status: "ERROR",
-                    message: "Usuari no trobat"
+                    message: "Usuari no trobat",
+                    data: null
                 });
             }
 
@@ -355,7 +393,8 @@ const adminController = {
         } catch (error) {
             return res.status(500).json({
                 status: "ERROR",
-                message: "Error actualitzant rol: " + error.message
+                message: "Error actualitzant rol: " + error.message,
+                data: null
             });
         }
     }

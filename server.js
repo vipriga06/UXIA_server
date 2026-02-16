@@ -8,6 +8,7 @@ const { logger, expressLogger } = require('./src/config/logger')
 const userRoutes = require('./src/routes/userRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
 const imageRoutes = require('./src/routes/imageRoutes');
+const usuariRoutes = require('./src/routes/usuariRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -43,6 +44,7 @@ app.get('/health/db', async (req, res) => {
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/analitzar-imatge', imageRoutes); 
+app.use('/api/usuaris', usuariRoutes);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 

@@ -16,9 +16,7 @@ const imageController = {
                 });
             }
 
-            // ⚠️ De moment no requerim autenticació (punt 10 especifica)
-            // Quan s'integri: const userId = req.userId;
-            const userId = 1; // Temporal per proves
+            const userId = req.userId; // Agafa l'ID del token
 
             // 1. Guardar la petició a la BD
             const petition = await Petition.create({
