@@ -100,7 +100,7 @@ const adminController = {
                 });
             }
 
-            await existingToken.destroy();
+            //await existingToken.destroy();
 
             return res.status(200).json({
                 status: "OK",

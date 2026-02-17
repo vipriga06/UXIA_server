@@ -60,7 +60,7 @@ async function startServer() {
         console.log('Base de datos conectada');
         
         // Sincronizar models con la DB
-        await sequelize.sync({force: true});
+        await sequelize.sync({force: false});
         console.log('Modelos sincronizados');
 
         app.listen(PORT, '0.0.0.0', () => {

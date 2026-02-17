@@ -10,3 +10,5 @@ function generateToken(userId) {
     { expiresIn: '7d' } // Token expira en 7 dies
   );
 }
+
+module.exports = generateToken;
