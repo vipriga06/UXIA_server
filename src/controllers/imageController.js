@@ -54,25 +54,25 @@ const imageController = {
             // 🔥 PROMPT PER OLLAMA (adaptat del codi de la Laura)
             const OLLAMA_PROMPT = `Analyze the provided image.
 
-Return ONLY a valid JSON object with the exact following structure:
+                Return ONLY a valid JSON object with the exact following structure:
 
-{
-  "description": "Clear and detailed description of what appears in the image",
-  "tags": ["tag1", "tag2", "tag3", "tag4"]
-}
+                {
+                "description": "Clear and detailed description of what appears in the image",
+                "tags": ["tag1", "tag2", "tag3", "tag4"]
+                }
 
-Rules:
-- The description must be 2 to 4 sentences long in Catalan language.
-- Tags must be single keywords in lowercase in Catalan.
-- Tags should describe objects, environment, colors, and overall context.
-- Do not include any text before or after the JSON.
-- Do not use markdown formatting.
-- Ensure the output is valid JSON.`;
+                Rules:
+                - The description must be 2 to 4 sentences long in Catalan language.
+                - Tags must be single keywords in lowercase in Catalan.
+                - Tags should describe objects, environment, colors, and overall context.
+                - Do not include any text before or after the JSON.
+                - Do not use markdown formatting.
+                - Ensure the output is valid JSON.`;
 
             // 2. Cridar a Ollama
             logger.info('Enviant petició a Ollama...');
             
-            const ollamaUrl = process.env.OLLAMA_URL || 'http://192.168.1.24:11434/api/generate';
+            const ollamaUrl = process.env.OLLAMA_URL;
             
             const requestBody = {
                 model: model,
