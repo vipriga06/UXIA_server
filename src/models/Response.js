@@ -5,9 +5,9 @@ module.exports = (sequelize) => {
 
     Response.init({
         id: {
-            type: DataTypes.INTEGER,
-            primaryKey: true,
-            autoIncrement: true
+            type: DataTypes.UUID,
+            defaultValue: DataTypes.UUIDV4,
+            primaryKey: true
         },
         petitionId: {
             type: DataTypes.INTEGER,
@@ -19,11 +19,17 @@ module.exports = (sequelize) => {
         },
         status: {
             type: DataTypes.STRING,
-            allowNull: false
+            allowNull: false,
+            validate: {
+                notEmpty: true
+            }
         },
         message: {
             type: DataTypes.TEXT,
-            allowNull: false
+            allowNull: false,
+            validate: {
+                notEmpty: true
+            }
         },
         data: {
             type: DataTypes.JSON,

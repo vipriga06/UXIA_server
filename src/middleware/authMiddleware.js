@@ -1,61 +1,56 @@
+// src/middleware/authMiddleware.js
+const jwt = require('jsonwebtoken');
 const { Token } = require('../models');
 
-// Middleware para autenticar usando API Key
-const authMiddleware = async (req, res, next) => {
+const authTokenMiddleware = async (req, res, next) => {
     try {
-        const apiKey = req.headers['x-api-key'] || req.query.api_key;
-
-        if (!apiKey) {
+        const authHeader = req.headers.authorization;
+        
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
             return res.status(401).json({
                 status: "ERROR",
-                message: "API Key requerida"
+                message: "Token no proporcionat"
             });
         }
 
-        const token = await Token.findOne({
-            where: { token: apiKey }
+        const tokenValue = authHeader.substring(7);
+
+        // 1. Verificar JWT
+        let decoded;
+        try {
+            decoded = jwt.verify(tokenValue, process.env.JWT_SECRET || 'clau_secreta_temporal');
+        } catch (error) {
+            return res.status(401).json({
+                status: "ERROR",
+                message: "Token invàlid o expirat"
+            });
+        }
+
+        // 2. Verificar que existeix a BD
+        const tokenRecord = await Token.findOne({ 
+            where: { 
+                token: tokenValue,
+                userId: decoded.userId 
+            } 
         });
 
-        if (!token) {
+        if (!tokenRecord) {
             return res.status(401).json({
                 status: "ERROR",
-                message: "API Key inválida"
+                message: "Token no vàlid"
             });
         }
 
-        // Pasar el userId al request para usarlo en los controladores
-        req.userId = token.userId;
+        req.userId = decoded.userId;
+        req.token = tokenValue;
         next();
+
     } catch (error) {
         return res.status(500).json({
             status: "ERROR",
-            message: error.message
+            message: "Error en validació de token: " + error.message
         });
     }
 };
 
-// Middleware para verificar si el usuario es admin
-const adminMiddleware = async (req, res, next) => {
-    try {
-        const { User } = require('../models');
-        const userId = req.userId;
-
-        const user = await User.findByPk(userId);
-
-        if (!user || user.role !== 'admin') {
-            return res.status(403).json({
-                status: "ERROR",
-                message: "Només els administradors poden accedir a aquest recurs"
-            });
-        }
-
-        next();
-    } catch (error) {
-        return res.status(500).json({
-            status: "ERROR",
-            message: error.message
-        });
-    }
-};
-
-module.exports = { authMiddleware, adminMiddleware };
+module.exports = authTokenMiddleware;

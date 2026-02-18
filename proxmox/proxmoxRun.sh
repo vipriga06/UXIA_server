@@ -30,8 +30,12 @@ ssh -p 20127 -oHostKeyAlgorithms=+ssh-rsa "$USER@ieticloudpro.ieti.cat" "
 scp -P 20127 -oHostKeyAlgorithms=+ssh-rsa \
     package.json \
     server.js \
-    .env \
     "$USER@ieticloudpro.ieti.cat:~/uxia-server/"
+
+# 2b. Enviar .env.production como .env
+scp -P 20127 -oHostKeyAlgorithms=+ssh-rsa \
+    .env.production \
+    "$USER@ieticloudpro.ieti.cat:~/uxia-server/.env"
 
 # 3. Enviar carpeta src completa
 scp -P 20127 -r -oHostKeyAlgorithms=+ssh-rsa \

@@ -1,12 +1,14 @@
 require('dotenv').config();
 const express = require('express');
 const { sequelize } = require('./src/models');
-const userRoutes = require('./src/routes/userRoutes');
-const petitionRoutes = require('./src/routes/petitionRoutes');
-const responseRoutes = require('./src/routes/responseRoutes');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./src/config/swagger');
 const { logger, expressLogger } = require('./src/config/logger')
+
+const userRoutes = require('./src/routes/userRoutes');
+const adminRoutes = require('./src/routes/adminRoutes');
+const imageRoutes = require('./src/routes/imageRoutes');
+const usuariRoutes = require('./src/routes/usuariRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,10 +40,11 @@ app.get('/health/db', async (req, res) => {
     }
 });
 
-// Rutas de API
+// RUTES DE API
 app.use('/api/users', userRoutes);
-app.use('/api/petitions', petitionRoutes);
-app.use('/api/responses', responseRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/analitzar-imatge', imageRoutes); 
+app.use('/api/usuaris', usuariRoutes);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
@@ -56,15 +59,14 @@ async function startServer() {
         await sequelize.authenticate();
         console.log('Base de datos conectada');
         
-        // Sincronitzar models amb la base de dades
+        // Sincronizar models con la DB
         await sequelize.sync({force: false});
         console.log('Modelos sincronizados');
 
-        app.listen(PORT, () => {
-            console.log(`🚀 Servidor corriendo en: http://localhost:${PORT}`);
-            console.log(`📊 Health check: http://localhost:${PORT}/health`);
-            console.log(`📚 API Docs: http://localhost:${PORT}/api-docs`);
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
         });
+
 
     } catch (error) {
         console.error('Error al iniciar el servidor:', error.message);

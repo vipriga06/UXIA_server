@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eu
 
-source ./proxmox/config.env
+source config.env
 
 USER=${1:-$DEFAULT_USER}
 RSA_PATH=${2:-"$DEFAULT_RSA_PATH"}
