@@ -21,8 +21,16 @@ const adminController = {
                 });
             }
 
-            // Buscar usuario por email
-            const user = await User.findOne({ where: { email } });
+            // Buscar usuario por email o nickname
+            const { Op } = require('sequelize');
+            const user = await User.findOne({
+                where: {
+                    [Op.or]: [
+                        { email: email },      // Busca per email
+                        { nickname: email }     // Busca per nickname (el camp "email" conté el nickname)
+                    ]
+                }
+            });
 
             if (!user) {
                 return res.status(401).json({
