@@ -41,8 +41,9 @@ const imageController = {
             }
 
             const userId = req.userId;
+            const startTime = Date.now();
 
-            // Guardar petició a BD
+            // 1. Guardar la petició a la BD
             const petition = await Petition.create({
                 userId,
                 prompt,
@@ -50,32 +51,143 @@ const imageController = {
                 model
             });
 
-            // 🟢 MOCK: Valors de prova
-            const processingTime = "0.5s";
-            
-            // 🔥 CANVI IMPORTANT: "descripcio" en català (amb 'c')
-            const descripcio = "Aquesta és una descripció de prova per assegurar el funcionament de l'app i de l'endpoint";
-            const tags = ["prova", "aleatori", "test"];
+            // 🔥 PROMPT PER OLLAMA (adaptat del codi de la Laura)
+            const OLLAMA_PROMPT = `Analyze the provided image.
 
-            // Guardar resposta a BD
+Return ONLY a valid JSON object with the exact following structure:
+
+{
+  "description": "Clear and detailed description of what appears in the image",
+  "tags": ["tag1", "tag2", "tag3", "tag4"]
+}
+
+Rules:
+- The description must be 2 to 4 sentences long in Catalan language.
+- Tags must be single keywords in lowercase in Catalan.
+- Tags should describe objects, environment, colors, and overall context.
+- Do not include any text before or after the JSON.
+- Do not use markdown formatting.
+- Ensure the output is valid JSON.`;
+
+            // 2. Cridar a Ollama
+            logger.info('Enviant petició a Ollama...');
+            
+            const ollamaUrl = process.env.OLLAMA_URL || 'http://192.168.1.24:11434/api/generate';
+            
+            const requestBody = {
+                model: model,
+                prompt: OLLAMA_PROMPT,
+                images: [imagesArray[0]], // Agafem la primera imatge
+                stream: false
+            };
+
+            let ollamaResponse;
+            try {
+                const fetch = require('node-fetch'); // Assegura't de tenir node-fetch instal·lat
+                
+                const response = await fetch(ollamaUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody),
+                    timeout: 30000 // 30 segons
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data || !data.response) {
+                    throw new Error('Unexpected Ollama response format');
+                }
+
+                ollamaResponse = data.response;
+                
+            } catch (ollamaError) {
+                logger.error('Error en connexió amb Ollama:', { 
+                    error: ollamaError.message,
+                    url: ollamaUrl 
+                });
+                
+                // Opció: Fallback a mock si falla Ollama
+                const mockDescription = "Aquesta és una descripció de prova (fallback) per assegurar el funcionament de l'app";
+                const mockTags = ["prova", "fallback", "test"];
+                
+                // Guardar resposta d'error a la BD
+                await Response.create({
+                    petitionId: petition.id,
+                    status: 'OK',
+                    message: 'Imatge analitzada correctament (MOCK - Ollama no disponible)',
+                    data: {
+                        descripcio: mockDescription,
+                        tags: mockTags,
+                        processing_time: ((Date.now() - startTime) / 1000).toFixed(1) + 's',
+                        model_used: model
+                    }
+                });
+
+                return res.status(200).json({
+                    status: 'OK',
+                    message: 'Imatges processades correctament',
+                    data: {
+                        descripcio: mockDescription,
+                        tags: mockTags,
+                        processing_time: ((Date.now() - startTime) / 1000).toFixed(1) + 's',
+                        model_used: model
+                    }
+                });
+            }
+
+            const processingTime = ((Date.now() - startTime) / 1000).toFixed(1) + 's';
+
+            // 3. Processar resposta de Ollama (extreure JSON)
+            let description = '';
+            let tags = [];
+
+            try {
+                // Netejar la resposta per obtenir només el JSON
+                const jsonStart = ollamaResponse.indexOf('{');
+                const jsonEnd = ollamaResponse.lastIndexOf('}') + 1;
+                
+                if (jsonStart !== -1 && jsonEnd > jsonStart) {
+                    const cleanJson = ollamaResponse.slice(jsonStart, jsonEnd);
+                    const parsed = JSON.parse(cleanJson);
+                    
+                    description = parsed.description || 'Sense descripció';
+                    tags = parsed.tags || [];
+                } else {
+                    // Si no troba JSON, agafar la resposta sencera
+                    description = ollamaResponse;
+                    tags = [];
+                }
+            } catch (parseError) {
+                logger.error('Error parsejant resposta d\'Ollama:', parseError);
+                description = ollamaResponse;
+                tags = [];
+            }
+
+            // 4. Guardar resposta a la BD
             await Response.create({
                 petitionId: petition.id,
                 status: 'OK',
                 message: 'Imatge analitzada correctament',
                 data: {
-                    descripcio,  // ← guardem amb 'c'
-                    tags,
+                    descripcio: description,
+                    tags: tags,
                     processing_time: processingTime,
                     model_used: model
                 }
             });
 
-            // 🔥 RETORNAR RESPOSTA AMB ELS NOMS QUE ELLA ESPERA
+            // 5. Retornar resposta
             return res.status(200).json({
                 status: 'OK',
                 message: 'Imatges processades correctament',
                 data: {
-                    descripcio: descripcio,  // ← "descripcio" (amb 'c')
+                    descripcio: description,
                     tags: tags,
                     processing_time: processingTime,
                     model_used: model
@@ -83,7 +195,11 @@ const imageController = {
             });
 
         } catch (error) {
-            logger.error('Error:', error);
+            logger.error('Error en analitzar imatge:', { 
+                error: error.message, 
+                stack: error.stack 
+            });
+            
             return res.status(500).json({
                 status: 'ERROR',
                 message: 'Error intern del servidor',
