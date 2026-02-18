@@ -58,7 +58,7 @@ const imageController = {
 
             console.log('🔵 PAS 5: ImagesArray OK, primera imatge length:', imagesArray[0]?.length);
 
-            const userId = req.userId;
+            const userId = req.userId || 1; //Añadimos el 1 para pruebas
             const startTime = Date.now();
 
             // 1. Guardar la petició a la BD

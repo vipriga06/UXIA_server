@@ -31,6 +31,6 @@ const authTokenMiddleware = require('../middleware/authMiddleware');
  */
 router.post('/', imageController.analitzarImatge);
 
-router.post('/', authTokenMiddleware, imageController.analitzarImatge);
+//router.post('/', authTokenMiddleware, imageController.analitzarImatge); //Comentamos de momento esta parte
 
 module.exports = router;
