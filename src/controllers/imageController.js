@@ -1,6 +1,7 @@
 // src/controllers/imageController.js
 const { Petition, Response } = require('../models');
 const { logger } = require('../config/logger');
+const fetch = require('node-fetch');
 
 const imageController = {
     async analitzarImatge(req, res) {
@@ -77,13 +78,12 @@ const imageController = {
             const requestBody = {
                 model: model,
                 prompt: OLLAMA_PROMPT,
-                images: [imagesArray[0]], // Agafem la primera imatge
+                imatges: [imagesArray[0]], // Agafem la primera imatge
                 stream: false
             };
 
             let ollamaResponse;
             try {
-                const fetch = require('node-fetch'); // Assegura't de tenir node-fetch instal·lat
                 
                 const response = await fetch(ollamaUrl, {
                     method: 'POST',
