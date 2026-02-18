@@ -55,43 +55,49 @@ const imageController = {
             // 🔥 PROMPT PER OLLAMA (adaptat del codi de la Laura)
             const OLLAMA_PROMPT = `Analyze the provided image.
 
-                Return ONLY a valid JSON object with the exact following structure:
+Return ONLY a valid JSON object with the exact following structure:
 
-                {
-                "description": "Clear and detailed description of what appears in the image",
-                "tags": ["tag1", "tag2", "tag3", "tag4"]
-                }
+{
+  "description": "Clear and detailed description of what appears in the image",
+  "tags": ["tag1", "tag2", "tag3", "tag4"]
+}
 
-                Rules:
-                - The description must be 2 to 4 sentences long in Catalan language.
-                - Tags must be single keywords in lowercase in Catalan.
-                - Tags should describe objects, environment, colors, and overall context.
-                - Do not include any text before or after the JSON.
-                - Do not use markdown formatting.
-                - Ensure the output is valid JSON.`;
+Rules:
+- The description must be 2 to 4 sentences long in Catalan language.
+- Tags must be single keywords in lowercase in Catalan.
+- Tags should describe objects, environment, colors, and overall context.
+- Do not include any text before or after the JSON.
+- Do not use markdown formatting.
+- Ensure the output is valid JSON.`;
 
             // 2. Cridar a Ollama
             logger.info('Enviant petició a Ollama...');
             
-            const ollamaUrl = process.env.OLLAMA_URL;
+            const ollamaUrl = process.env.OLLAMA_URL || 'http://192.168.1.24:11434/api/generate';
             
+            // 🔥 CORREGIT: "images" en anglès (no "imatges")
             const requestBody = {
                 model: model,
                 prompt: OLLAMA_PROMPT,
-                imatges: [imagesArray[0]], // Agafem la primera imatge
+                images: [imagesArray[0]], // ✅ CORRECTE
                 stream: false
             };
 
+            console.log('📤 Enviant a Ollama:', {
+                model: requestBody.model,
+                promptLength: requestBody.prompt.length,
+                imageLength: requestBody.images[0]?.length
+            });
+
             let ollamaResponse;
             try {
-                
                 const response = await fetch(ollamaUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(requestBody),
-                    timeout: 30000 // 30 segons
+                    timeout: 30000
                 });
 
                 if (!response.ok) {
@@ -112,11 +118,10 @@ const imageController = {
                     url: ollamaUrl 
                 });
                 
-                // Opció: Fallback a mock si falla Ollama
+                // Fallback a mock
                 const mockDescription = "Aquesta és una descripció de prova (fallback) per assegurar el funcionament de l'app";
                 const mockTags = ["prova", "fallback", "test"];
                 
-                // Guardar resposta d'error a la BD
                 await Response.create({
                     petitionId: petition.id,
                     status: 'OK',
@@ -148,7 +153,6 @@ const imageController = {
             let tags = [];
 
             try {
-                // Netejar la resposta per obtenir només el JSON
                 const jsonStart = ollamaResponse.indexOf('{');
                 const jsonEnd = ollamaResponse.lastIndexOf('}') + 1;
                 
@@ -159,12 +163,11 @@ const imageController = {
                     description = parsed.description || 'Sense descripció';
                     tags = parsed.tags || [];
                 } else {
-                    // Si no troba JSON, agafar la resposta sencera
                     description = ollamaResponse;
                     tags = [];
                 }
             } catch (parseError) {
-                logger.error('Error parsejant resposta d\'Ollama:', parseError);
+                logger.error('Error parsejant resposta:', parseError);
                 description = ollamaResponse;
                 tags = [];
             }
@@ -182,7 +185,7 @@ const imageController = {
                 }
             });
 
-            // 5. Retornar resposta
+            // 5. Retornar resposta (amb "descripcio" per la companya)
             return res.status(200).json({
                 status: 'OK',
                 message: 'Imatges processades correctament',
