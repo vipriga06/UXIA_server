@@ -3,6 +3,7 @@ const { User, Token } = require('../models');
 const { logger } = require('../config/logger');
 const generateToken = require('../utils/generateToken');
 const { Op } = require('sequelize');
+const fetch = require('node-fetch');
 
 const usuariController = {
     // POST /api/usuaris/registrar
@@ -37,30 +38,54 @@ const usuariController = {
                 });
             }
 
-            // Crear usuari (sense password, encara no validat)
+            // 🔥 Generar codi de validació (6 dígits)
+            const codiValidacio = Math.floor(100000 + Math.random() * 900000).toString();
+            
+            // Crear usuari amb codi de validació
             const newUser = await User.create({
                 nickname,
                 email,
                 telefon,
-                passwordHash: null, // Encara no té password
+                passwordHash: null,
                 role: 'user',
                 validat: false,
-                tos: false
+                tos: false,
+                validationCode: codiValidacio,
+                validationCodeExpires: new Date(Date.now() + 10 * 60 * 1000) // 10 minuts
             });
 
-            // 🔥 SIMULACIÓ: Enviar SMS amb codi de validació
-            const codiValidacio = Math.floor(100000 + Math.random() * 900000); // 6 dígits
-            logger.info(`SMS enviat a ${telefon} amb codi: ${codiValidacio}`);
-            
-            // ⚠️ IMPORTANT: En producció, guardar codi a BD amb expiració
-            // Per ara, ho retornem per proves (després ho treurem)
-            
+            // 📱 Enviar SMS amb l'API del IETI Cloud
+            try {
+                const smsUrl = process.env.SMS_API_URL || 'http://192.168.1.16:8000/api/sendsms/';
+                const params = new URLSearchParams({
+                    username: process.env.SMS_USERNAME || 'ams23',
+                    api_token: process.env.SMS_API_TOKEN || 'xxxYYYzzz',
+                    receiver: telefon,
+                    text: `El teu codi de validació UXIA és: ${codiValidacio}`
+                });
+
+                logger.info(`Enviant SMS a ${telefon} amb codi: ${codiValidacio}`);
+                
+                const response = await fetch(`${smsUrl}?${params}`, {
+                    method: 'GET',
+                    timeout: 5000
+                });
+
+                if (!response.ok) {
+                    logger.error('Error enviant SMS:', await response.text());
+                }
+            } catch (smsError) {
+                logger.error('Error en connexió amb SMS Gateway:', smsError.message);
+                // Continuem encara que falli l'SMS (per proves)
+            }
+
             return res.status(201).json({
                 status: 'OK',
-                message: "L'usuari s'ha creat correctament",
+                message: "L'usuari s'ha creat correctament. Rebràs un SMS amb el codi de validació.",
                 data: {
                     nickname: newUser.nickname,
-                    email: newUser.email
+                    email: newUser.email,
+                    telefon: newUser.telefon
                 }
             });
 
@@ -87,34 +112,33 @@ const usuariController = {
                 });
             }
 
-            // 🔥 SIMULACIÓ: Per proves, acceptem 123456
-            // Després ho canviaràs per consultar a BD
-            if (codi_validacio !== 123456) {
+            // Buscar usuari per telèfon amb codi vigent
+            const user = await User.findOne({
+                where: {
+                    telefon,
+                    validationCode: codi_validacio,
+                    validationCodeExpires: { [Op.gt]: new Date() } // No expirat
+                }
+            });
+
+            if (!user) {
                 return res.status(401).json({
                     status: 'ERROR',
-                    message: 'Codi de validació incorrecte',
+                    message: 'Codi de validació incorrecte o expirat',
                     data: null
                 });
             }
 
-            // Buscar usuari per telèfon
-            const user = await User.findOne({ where: { telefon } });
-            if (!user) {
-                return res.status(404).json({
-                    status: 'ERROR',
-                    message: 'Usuari no trobat',
-                    data: null
-                });
-            }
-
-            // Validar usuari
+            // ✅ Validar usuari
             user.validat = true;
+            user.validationCode = null;
+            user.validationCodeExpires = null;
             await user.save();
 
-            // Generar API_KEY (token)
+            // 🔥 Eliminar API_KEY antiga (si en tenia) i crear nova
+            await Token.destroy({ where: { userId: user.id } });
+            
             const apiKey = generateToken(user.id);
-
-            // Guardar token a BD
             await Token.create({
                 token: apiKey,
                 userId: user.id
@@ -141,7 +165,7 @@ const usuariController = {
     // GET /api/usuaris/perfil
     async perfil(req, res) {
         try {
-            const userId = req.userId; // Del middleware
+            const userId = req.userId;
 
             const user = await User.findByPk(userId, {
                 attributes: ['nickname', 'email', 'telefon', 'validat', 'tos']
@@ -169,6 +193,62 @@ const usuariController = {
 
         } catch (error) {
             logger.error('Error obtenint perfil:', error);
+            return res.status(500).json({
+                status: 'ERROR',
+                message: 'Error intern del servidor',
+                data: null
+            });
+        }
+    },
+
+    // POST /api/usuaris/revalidar (opcional - per regenerar API_KEY)
+    async revalidar(req, res) {
+        try {
+            const { telefon } = req.body;
+
+            if (!telefon) {
+                return res.status(400).json({
+                    status: 'ERROR',
+                    message: 'Falta el telèfon',
+                    data: null
+                });
+            }
+
+            const user = await User.findOne({ 
+                where: { 
+                    telefon, 
+                    validat: true 
+                } 
+            });
+            
+            if (!user) {
+                return res.status(404).json({
+                    status: 'ERROR',
+                    message: 'Usuari no trobat o no validat',
+                    data: null
+                });
+            }
+
+            // Eliminar API_KEY antiga
+            await Token.destroy({ where: { userId: user.id } });
+
+            // Generar nova API_KEY
+            const apiKey = generateToken(user.id);
+            await Token.create({
+                token: apiKey,
+                userId: user.id
+            });
+
+            return res.status(200).json({
+                status: 'OK',
+                message: 'API_KEY regenerada correctament',
+                data: {
+                    api_key: apiKey
+                }
+            });
+
+        } catch (error) {
+            logger.error('Error en revalidar:', error);
             return res.status(500).json({
                 status: 'ERROR',
                 message: 'Error intern del servidor',

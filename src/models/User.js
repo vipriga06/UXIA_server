@@ -1,3 +1,4 @@
+// src/models/User.js
 const { Model, DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
@@ -5,17 +6,16 @@ module.exports = (sequelize) => {
 
     User.init({
         id: {
-            type: DataTypes.UUID,
-            defaultValue: DataTypes.UUIDV4,
-            primaryKey: true
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true
         },
         nickname: {
             type: DataTypes.STRING,
             allowNull: false,
             unique: true,
             validate: {
-                notEmpty: true,
-                notNull: true
+                notEmpty: true
             }
         },
         email: {
@@ -23,7 +23,8 @@ module.exports = (sequelize) => {
             allowNull: false,
             unique: true,
             validate: {
-                notEmpty: true
+                notEmpty: true,
+                isEmail: true
             }
         },
         telefon: {
@@ -35,10 +36,7 @@ module.exports = (sequelize) => {
         },
         passwordHash: {
             type: DataTypes.STRING,
-            allowNull: true,
-            validate: {
-                notEmpty: true
-            }
+            allowNull: true
         },
         role: {
             type: DataTypes.ENUM('admin', 'user'),
@@ -54,11 +52,21 @@ module.exports = (sequelize) => {
             type: DataTypes.BOOLEAN,
             allowNull: false,
             defaultValue: false
+        },
+
+        validationCode: {
+            type: DataTypes.STRING(6),
+            allowNull: true
+        },
+        validationCodeExpires: {
+            type: DataTypes.DATE,
+            allowNull: true
         }
     }, {
         sequelize,
         modelName: 'User',
-        tableName: 'users'
+        tableName: 'users',
+        timestamps: true
     });
 
     return User;

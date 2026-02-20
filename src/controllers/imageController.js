@@ -8,7 +8,6 @@ const imageController = {
         try {
             console.log('🔵 PAS 1: Iniciant anàlisi');
             
-            // ✅ LA APP ENVIA "imatges" (en plural)
             let imagesData = req.body.imatges;
             let prompt = req.body.prompt || "Què hi ha en aquesta imatge?";
             let model = req.body.model || 'qwen2.5vl:7b';
@@ -22,7 +21,7 @@ const imageController = {
 
             // Validar que tenim imatges
             if (!imagesData) {
-                console.log('🔴 ERROR: No hi ha imatges');
+                console.log('ERROR: No hi ha imatges');
                 return res.status(400).json({
                     status: 'ERROR',
                     message: 'Falten camps obligatoris: imatges',
@@ -58,7 +57,7 @@ const imageController = {
 
             console.log('🔵 PAS 5: ImagesArray OK, primera imatge length:', imagesArray[0]?.length);
 
-            const userId = req.userId || 1; //Añadimos el 1 para pruebas
+            const userId = req.userId || 1; //Añadimos el 1 para pruebas en kotlin
             const startTime = Date.now();
 
             // 1. Guardar la petició a la BD
@@ -92,12 +91,12 @@ Rules:
             // 2. Cridar a Ollama
             console.log('🔵 PAS 8: Preparant crida a Ollama');
             
-            const ollamaUrl = 'http://192.168.1.24:11434/api/generate'; // Directa
+            const ollamaUrl = 'http://192.168.1.24:11434/api/generate'; 
             
             const requestBody = {
                 model: model,
                 prompt: OLLAMA_PROMPT,
-                images: [imagesArray[0]], // ✅ CORRECTE
+                images: [imagesArray[0]], 
                 stream: false
             };
 
