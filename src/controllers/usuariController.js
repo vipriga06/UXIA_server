@@ -39,8 +39,11 @@ const usuariController = {
             }
 
             // Generar codi de validació (6 dígits)
-            const codiValidacio = Math.floor(100000 + Math.random() * 900000).toString();
+            //const codiValidacio = Math.floor(100000 + Math.random() * 900000).toString();
             
+            //Para pruebas:
+            const codiValidacio = '123465';
+
             // Crear usuari amb codi de validació
             const newUser = await User.create({
                 nickname,
@@ -102,9 +105,9 @@ const usuariController = {
     // POST /api/usuaris/validar
     async validar(req, res) {
         try {
-            const { telefon, codi_validacio } = req.body;
+            const {codi_validacio } = req.body;
 
-            if (!telefon || !codi_validacio) {
+            if (!codi_validacio) {
                 return res.status(400).json({
                     status: 'ERROR',
                     message: 'Falten camps: telefon i codi_validacio',
@@ -115,7 +118,6 @@ const usuariController = {
             // Buscar usuari per telèfon amb codi vigent
             const user = await User.findOne({
                 where: {
-                    telefon,
                     validationCode: codi_validacio,
                     validationCodeExpires: { [Op.gt]: new Date() } // No expirat
                 }

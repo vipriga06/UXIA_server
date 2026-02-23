@@ -6,9 +6,9 @@ module.exports = (sequelize) => {
 
     User.init({
         id: {
-            type: DataTypes.INTEGER,
-            primaryKey: true,
-            autoIncrement: true
+            type: DataTypes.UUID,
+            defaultValue: DataTypes.UUIDV4, 
+            primaryKey: true
         },
         nickname: {
             type: DataTypes.STRING,
@@ -53,7 +53,6 @@ module.exports = (sequelize) => {
             allowNull: false,
             defaultValue: false
         },
-
         validationCode: {
             type: DataTypes.STRING(6),
             allowNull: true
