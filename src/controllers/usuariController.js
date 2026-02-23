@@ -38,7 +38,7 @@ const usuariController = {
                 });
             }
 
-            // 🔥 Generar codi de validació (6 dígits)
+            // Generar codi de validació (6 dígits)
             const codiValidacio = Math.floor(100000 + Math.random() * 900000).toString();
             
             // Crear usuari amb codi de validació
@@ -54,12 +54,12 @@ const usuariController = {
                 validationCodeExpires: new Date(Date.now() + 10 * 60 * 1000) // 10 minuts
             });
 
-            // 📱 Enviar SMS amb l'API del IETI Cloud
+            // Enviar SMS amb l'API del IETI Cloud
             try {
                 const smsUrl = process.env.SMS_API_URL || 'http://192.168.1.16:8000/api/sendsms/';
                 const params = new URLSearchParams({
-                    username: process.env.SMS_USERNAME || 'ams23',
-                    api_token: process.env.SMS_API_TOKEN || 'xxxYYYzzz',
+                    username: process.env.SMS_USERNAME || 'uxia3',
+                    api_token: process.env.SMS_API_TOKEN || 'iPa6v58feLR10Hqrga3twzILZNvgo2QYbbPTsz60CQh7RDGz39E9cQ7tAwriAgre',
                     receiver: telefon,
                     text: `El teu codi de validació UXIA és: ${codiValidacio}`
                 });
@@ -129,13 +129,13 @@ const usuariController = {
                 });
             }
 
-            // ✅ Validar usuari
+            // Validar usuari
             user.validat = true;
             user.validationCode = null;
             user.validationCodeExpires = null;
             await user.save();
 
-            // 🔥 Eliminar API_KEY antiga (si en tenia) i crear nova
+            // Eliminar API_KEY antiga (si en tenia) i crear nova
             await Token.destroy({ where: { userId: user.id } });
             
             const apiKey = generateToken(user.id);
