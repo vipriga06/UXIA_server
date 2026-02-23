@@ -40,9 +40,6 @@ const usuariController = {
 
             // Generar codi de validació (6 dígits)
             const codiValidacio = Math.floor(100000 + Math.random() * 900000).toString();
-            
-            //Para pruebas:
-            //const codiValidacio = '123465';
 
             // Crear usuari amb codi de validació
             const newUser = await User.create({
