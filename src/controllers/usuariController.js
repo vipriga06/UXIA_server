@@ -20,6 +20,16 @@ const usuariController = {
                 });
             }
 
+            // Verificacio del format d'email (xxx@xxx.xxx)
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return res.status(400).json({
+                    status: 'ERROR',
+                    message: 'El format del correu no es valid. Ha de ser xxx@xxx.xxx',
+                    data: null
+                });
+            }
+
             // Comprovar si l'usuari ja existeix
             const existingUser = await User.findOne({
                 where: {
@@ -33,15 +43,19 @@ const usuariController = {
             if (existingUser) {
                 return res.status(409).json({
                     status: 'ERROR',
-                    message: "L'email o nickname ja està registrat",
+                    message: "L'email o nickname ja esta registrat",
                     data: null
                 });
             }
 
-            // Generar codi de validació (6 dígits)
+            // Generar codi de validacio (6 digits)
             const codiValidacio = Math.floor(100000 + Math.random() * 900000).toString();
+            
+            // Log per veure el codi generat
+            console.log('CODI GENERAT PER A', telefon, ':', codiValidacio);
+            console.log('Expira:', new Date(Date.now() + 10 * 60 * 1000));
 
-            // Crear usuari amb codi de validació
+            // Crear usuari amb codi de validacio
             const newUser = await User.create({
                 nickname,
                 email,
@@ -54,6 +68,9 @@ const usuariController = {
                 validationCodeExpires: new Date(Date.now() + 10 * 60 * 1000) // 10 minuts
             });
 
+            console.log('Usuari creat amb ID:', newUser.id);
+            console.log('Codi guardat a BD:', newUser.validationCode);
+
             // Enviar SMS amb l'API del IETI Cloud
             try {
                 const smsUrl = process.env.SMS_API_URL || 'http://192.168.1.16:8000/api/sendsms/';
@@ -61,7 +78,7 @@ const usuariController = {
                     username: process.env.SMS_USERNAME || 'uxia3',
                     api_token: process.env.SMS_API_TOKEN || 'iPa6v58feLR10Hqrga3twzILZNvgo2QYbbPTsz60CQh7RDGz39E9cQ7tAwriAgre',
                     receiver: telefon,
-                    text: `El teu codi de validació UXIA és: ${codiValidacio}`
+                    text: `El teu codi de validacio UXIA es: ${codiValidacio}`
                 });
 
                 logger.info(`Enviant SMS a ${telefon} amb codi: ${codiValidacio}`);
@@ -73,15 +90,16 @@ const usuariController = {
 
                 if (!response.ok) {
                     logger.error('Error enviant SMS:', await response.text());
+                } else {
+                    console.log('SMS enviat correctament');
                 }
             } catch (smsError) {
-                logger.error('Error en connexió amb SMS Gateway:', smsError.message);
-                // Continuem encara que falli l'SMS (per proves)
+                logger.error('Error en connexio amb SMS Gateway:', smsError.message);
             }
 
             return res.status(201).json({
                 status: 'OK',
-                message: "L'usuari s'ha creat correctament. Rebràs un SMS amb el codi de validació.",
+                message: "L'usuari s'ha creat correctament. Rebras un SMS amb el codi de validacio.",
                 data: {
                     nickname: newUser.nickname,
                     email: newUser.email,
@@ -112,22 +130,39 @@ const usuariController = {
                 });
             }
 
-            // Buscar usuari per telèfon amb codi vigent
+            console.log('Validant:', { telefon, codi: codi_validacio });
+
+            // Buscar usuari per telefon amb codi vigent
             const user = await User.findOne({
                 where: {
                     telefon,
                     validationCode: codi_validacio,
-                    validationCodeExpires: { [Op.gt]: new Date() } // No expirat
+                    validationCodeExpires: { [Op.gt]: new Date() }
                 }
             });
 
             if (!user) {
+                console.log('No trobat. Buscant per telefon...');
+                const userByPhone = await User.findOne({ where: { telefon } });
+                if (userByPhone) {
+                    console.log('Usuari trobat per telefon:', {
+                        id: userByPhone.id,
+                        codi_guardat: userByPhone.validationCode,
+                        expira: userByPhone.validationCodeExpires,
+                        expirat: userByPhone.validationCodeExpires < new Date()
+                    });
+                } else {
+                    console.log('No existeix cap usuari amb telefon:', telefon);
+                }
+                
                 return res.status(401).json({
                     status: 'ERROR',
-                    message: 'Codi de validació incorrecte o expirat',
+                    message: 'Codi de validacio incorrecte o expirat',
                     data: null
                 });
             }
+
+            console.log('Usuari trobat:', user.id);
 
             // Validar usuari
             user.validat = true;
@@ -143,6 +178,8 @@ const usuariController = {
                 token: apiKey,
                 userId: user.id
             });
+
+            console.log('Usuari validat, API_KEY generada');
 
             return res.status(200).json({
                 status: 'OK',
@@ -181,7 +218,7 @@ const usuariController = {
 
             return res.status(200).json({
                 status: 'OK',
-                message: "Informació de l'usuari obtinguda correctament",
+                message: "Informacio de l'usuari obtinguda correctament",
                 data: {
                     nickname: user.nickname,
                     email: user.email,
@@ -201,7 +238,7 @@ const usuariController = {
         }
     },
 
-    // POST /api/usuaris/revalidar (opcional - per regenerar API_KEY)
+    // POST /api/usuaris/revalidar
     async revalidar(req, res) {
         try {
             const { telefon } = req.body;
@@ -209,7 +246,7 @@ const usuariController = {
             if (!telefon) {
                 return res.status(400).json({
                     status: 'ERROR',
-                    message: 'Falta el telèfon',
+                    message: 'Falta el telefon',
                     data: null
                 });
             }
